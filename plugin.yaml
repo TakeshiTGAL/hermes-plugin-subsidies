@@ -1,0 +1,45 @@
+name: jp-subsidies
+version: 0.1.0
+manifest_version: 2
+# hermes plugins install accepts manifest_version 2 from v0.21.4.
+requires_hermes: ">=0.21.4"
+description: >-
+  Japanese subsidies for Hermes Agent, built on the jGrants public API (no API key):
+  search by keyword, region, industry, employee-size and purpose enums; open a
+  subsidy detail (rate, portal URL, attachment names; optional save under
+  plugin-data); weekly script-only cron for new matches and deadlines within N days;
+  slash /subsidies is a read-only watch check (it does not advance seen_ids).
+author: TakeshiTGAL
+license: MIT
+homepage: https://github.com/TakeshiTGAL/hermes-plugin-subsidies
+tags: [subsidies, jgrants, japan, government-data, cron, sme]
+
+provides_tools:
+  - subsidies_search
+  - subsidies_detail
+  - subsidies_watch_setup
+
+config_schema:
+  watch_deadline_days:
+    type: int
+    default: 14
+    minimum: 1
+    maximum: 30
+    label: Watch deadline window (days)
+    description: >-
+      How many days ahead the weekly watch treats as “upcoming deadline”
+      (1–30; absolute maximum 30). When deadline_days is omitted, this
+      configured value is used (default 14). Arguments below 1 are rejected
+      (0 is not changed to 1). An explicit argument above the cap is stored
+      as the cap: 30 when this setting is unset, or this value when it is set.
+      The argument cannot raise that cap.
+  search_limit:
+    type: int
+    default: 30
+    minimum: 1
+    maximum: 100
+    label: Max search rows returned
+    description: >-
+      Hard cap on subsidies_search rows after client-side deadline filtering
+      (1–100). Tool arguments below 1 are rejected (0 is not changed to 1).
+      Values above this cap are reduced to the cap and cannot raise it.

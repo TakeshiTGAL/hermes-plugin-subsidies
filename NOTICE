@@ -1,0 +1,30 @@
+jp-subsidies
+============
+
+This plugin calls the jGrants (Jグランツ) public Web-API operated for the
+Japanese government subsidy portal. Use of that API is subject to the
+jGrants Web-API terms (API利用規約) and the published call limit
+(10 requests / 1 second in the API利用概要).
+
+- Portal: https://www.jgrants-portal.go.jp/
+- Open API page: https://www.jgrants-portal.go.jp/open-api
+- API terms (PDF): https://fs2.jgrants-portal.go.jp/API%E5%88%A9%E7%94%A8%E8%A6%8F%E7%B4%84.pdf
+- API overview (PDF): https://fs2.jgrants-portal.go.jp/API%E5%88%A9%E7%94%A8%E6%A6%82%E8%A6%81.pdf
+- API docs: https://developers.digital.go.jp/documents/jgrants/api/
+
+Required attribution when showing subsidy data (terms 第5条1項一 example):
+  出典：J グランツ
+
+Plugin code in this repository is MIT (see LICENSE). Offline fixtures under
+tests/fixtures/ are trimmed from public jGrants API responses (attachment
+bytes replaced with a tiny placeholder).
+
+------------------------------------------------------------------------------
+Reference implementation (API parameter shapes and credit wording ideas):
+
+jgrants-mcp-server — https://github.com/digital-go-jp/jgrants-mcp-server
+Copyright (c) 2025 Digital Agency, Government of Japan
+
+No source files were copied; this plugin is a separate Hermes Agent plugin
+that talks to the same public API. See that repository's LICENSE for the MIT
+text that applies to their code.

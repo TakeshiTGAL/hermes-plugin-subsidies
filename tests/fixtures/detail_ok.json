@@ -1,0 +1,52 @@
+{
+  "metadata": {
+    "type": "https://developers.digital.go.jp/documents/jgrants/api/",
+    "resultset": {
+      "count": 1
+    }
+  },
+  "result": [
+    {
+      "id": "a0WfQ000003MWE2UAO",
+      "name": "S-00009883",
+      "title": "令和８年度　病院勤務者勤務環境改善事業・救急医療体制強化事業",
+      "subsidy_catch_phrase": null,
+      "detail": "<p><strong style=\"color: rgb(0, 111, 173);\">■目的・概要</strong></p><p><span style=\"color: rgb(0, 0, 0);\">病院が実施する医師及び看護職員の勤務環境を改善し、離職防止と定着を図る取組及び職場を離れた医師等の再就業を支援する取組に対し、都が必要な経費を補助することにより、都内医療体制の安定的な確保に資することを目的とする。</span></p><p><span style=\"color: rgb(0, 0, 0); font-size: 12px;\">また、救急医療体制の強化を図るため、都内の救急医療体制の中核を担う救急車年間受入2,000件以上の病院に対して、医師及び看護職員の勤務環境を改善し、離職防止、負担軽減、復職、定着を図る取組に必要な経費を補助することにより、救急医療体制の安定的な確保に資することを目的とした事業です。</span></p><p><br></p><p><strong style=\"color: rgb(0, 111, 173);\">■応募資格</strong></p><…",
+      "use_purpose": "雇用・職場環境を改善したい / 設備整備・IT導入をしたい",
+      "industry": "医療、福祉",
+      "target_area_search": "東京都",
+      "target_area_detail": null,
+      "target_number_of_employees": "従業員数の制約なし",
+      "subsidy_rate": "1/2（施設・設備整備事業は2/3）",
+      "subsidy_max_limit": 0,
+      "acceptance_start_datetime": "2026-09-16T00:00Z",
+      "acceptance_end_datetime": "2027-05-31T14:59Z",
+      "project_end_deadline": null,
+      "request_reception_presence": "無",
+      "is_enable_multiple_request": true,
+      "front_subsidy_detail_page_url": "https://www.jgrants-portal.go.jp/subsidy/a0WfQ000003MWE2UAO",
+      "application_guidelines": [],
+      "outline_of_grant": [
+        {
+          "name": "01_病院勤務者勤務環境改善事業・救急医療体制強化事業実施要綱.pdf",
+          "data": "JVBERi0xLjQgdGlueQ=="
+        },
+        {
+          "name": "03_交付要綱別表.pdf",
+          "data": "JVBERi0xLjQgdGlueQ=="
+        }
+      ],
+      "application_form": [
+        {
+          "name": "01-1_【医療機関コード：病院名】交付申請書（ソフト）様式.xlsx",
+          "data": "JVBERi0xLjQgdGlueQ=="
+        },
+        {
+          "name": "01-2_【医療機関コード：病院名】交付申請書（ハード）様式.xlsx",
+          "data": "JVBERi0xLjQgdGlueQ=="
+        }
+      ],
+      "institution_name": "令和８年度病院勤務者勤務環境改善事業・救急医療体制強化事業"
+    }
+  ]
+}

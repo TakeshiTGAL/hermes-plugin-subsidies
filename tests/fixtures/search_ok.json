@@ -1,0 +1,43 @@
+{
+  "metadata": {
+    "type": "https://developers.digital.go.jp/documents/jgrants/api/",
+    "resultset": {
+      "count": 3
+    }
+  },
+  "result": [
+    {
+      "acceptance_end_datetime": "2027-05-31T14:59:00.000Z",
+      "acceptance_start_datetime": "2026-09-16T00:00:00.000Z",
+      "id": "a0WfQ000003MWE2UAO",
+      "institution_name": null,
+      "name": "S-00009883",
+      "subsidy_max_limit": 0,
+      "target_area_search": "東京都",
+      "target_number_of_employees": "従業員数の制約なし",
+      "title": "令和８年度　病院勤務者勤務環境改善事業・救急医療体制強化事業"
+    },
+    {
+      "acceptance_end_datetime": "2026-10-30T14:59:00.000Z",
+      "acceptance_start_datetime": "2025-10-29T00:00:00.000Z",
+      "id": "a0WfQ000003IBL3UAO",
+      "institution_name": null,
+      "name": "S-00009863",
+      "subsidy_max_limit": 0,
+      "target_area_search": "東京都",
+      "target_number_of_employees": "従業員数の制約なし",
+      "title": "令和６年度　勤務環境改善医師派遣等推進事業【仕入控除税額報告】"
+    },
+    {
+      "acceptance_end_datetime": "2026-10-30T14:59:00.000Z",
+      "acceptance_start_datetime": "2025-10-29T00:00:00.000Z",
+      "id": "a0WfQ000003I9xZUAS",
+      "institution_name": null,
+      "name": "S-00009862",
+      "subsidy_max_limit": 0,
+      "target_area_search": "東京都",
+      "target_number_of_employees": "従業員数の制約なし",
+      "title": "令和６年度地域医療勤務環境改善体制整備特別事業【仕入控除税額報告】"
+    }
+  ]
+}
