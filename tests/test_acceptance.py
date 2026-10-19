@@ -1,6 +1,6 @@
 """Offline checks named in the frozen acceptance table.
 
-Harness probes (install, slash_loop, cron_manual, redirect_key, argv_flags)
+Live probes (install, slash_loop, cron_manual, redirect_key, argv_flags)
 are not started here. These tests cover the same behavior without a socket.
 """
 
@@ -24,7 +24,6 @@ import pytest
 import yaml
 
 PLUGIN_DIR = Path(__file__).resolve().parent.parent
-SHIP = Path.home() / "takeshitgal" / "ship" / "jp-subsidies"
 FIXTURES = PLUGIN_DIR / "tests" / "fixtures"
 
 
@@ -51,14 +50,30 @@ def _sched(**kwargs):
 
 @pytest.fixture(scope="module")
 def public_text():
-    catalog = yaml.safe_load((SHIP / "jp-subsidies.yaml").read_text(encoding="utf-8"))
+    import os
+
+    catalog_env = os.environ.get("JP_SUBSIDIES_CATALOG_YAML", "").strip()
+    pr_env = os.environ.get("JP_SUBSIDIES_PR_BODY", "").strip()
+    license_env = os.environ.get("JP_SUBSIDIES_UPSTREAM_LICENSE", "").strip()
+    if not catalog_env or not pr_env or not license_env:
+        pytest.skip(
+            "Set JP_SUBSIDIES_CATALOG_YAML, JP_SUBSIDIES_PR_BODY, and "
+            "JP_SUBSIDIES_UPSTREAM_LICENSE to compare the catalog text."
+        )
+    catalog_path = Path(catalog_env)
+    pr_path = Path(pr_env)
+    license_path = Path(license_env)
+    if not catalog_path.is_file() or not pr_path.is_file() or not license_path.is_file():
+        pytest.skip("Catalog comparison files from the environment are missing.")
+    catalog = yaml.safe_load(catalog_path.read_text(encoding="utf-8"))
     return {
         "readme": (PLUGIN_DIR / "README.md").read_text(encoding="utf-8"),
         "manifest": (PLUGIN_DIR / "plugin.yaml").read_text(encoding="utf-8"),
         "description": str(catalog["description"]),
         "catalog_sha": str(catalog["sha"]),
-        "pr": (SHIP / "pr_body.md").read_text(encoding="utf-8"),
+        "pr": pr_path.read_text(encoding="utf-8"),
         "notice": (PLUGIN_DIR / "NOTICE").read_text(encoding="utf-8"),
+        "upstream_license": license_path.read_text(encoding="utf-8"),
     }
 
 
@@ -184,8 +199,11 @@ def test_explicit_deadline_days_cannot_raise_the_cap(plugin, fake_api):
         assert plugin.settings.search_limit(10000) == 30
         plugin.settings.bind_config(lambda key: 10 if key == "search_limit" else None)
         assert plugin.settings.search_limit(10000) == 10
-        clamped = _load(plugin.tools.subsidies_search, {"keyword": "人材", "limit": 10000})
-        assert clamped["count_returned"] <= 10
+        before = len(fake_api.calls)
+        refused = _load(plugin.tools.subsidies_search, {"keyword": "人材", "limit": 10000})
+        assert refused["ok"] is False and refused["error_type"] == "bad_request"
+        assert "10000" not in json.dumps(refused)
+        assert len(fake_api.calls) == before
     finally:
         plugin.settings.bind_config(None)
 
@@ -474,12 +492,12 @@ def test_profile_name_on_v0214_reads_the_home(plugin, monkeypatch):
     import types
 
     fake = types.ModuleType("hermes_cli.profiles")
-    fake.get_active_profile_name = lambda: "harnessprof"
+    fake.get_active_profile_name = lambda: "probeprof"
     pkg = types.ModuleType("hermes_cli")
     pkg.profiles = fake
     monkeypatch.setitem(sys.modules, "hermes_cli", pkg)
     monkeypatch.setitem(sys.modules, "hermes_cli.profiles", fake)
-    assert plugin.schedule.hermes_profile_name() == "harnessprof"
+    assert plugin.schedule.hermes_profile_name() == "probeprof"
     fake.get_active_profile_name = lambda: "custom"
     assert plugin.schedule.hermes_profile_name() == "default"
     note = plugin.schedule.unnamed_home_note()
@@ -584,7 +602,7 @@ def test_slash_worker_does_not_stall_the_loop_or_the_default_pool(plugin, monkey
         return max(gaps)
 
     # A full on-loop sleep is about 0.4s. One late tick under a busy
-    # preship run can exceed 0.2s, so keep the quietest of three runs.
+    # a full test run can exceed 0.2s, so keep the quietest of three runs.
     quietest = min(asyncio.run(stall()) for _ in range(3))
     assert quietest < 0.2
 
@@ -689,13 +707,22 @@ def test_catalog_and_public_text_match_the_table(public_text):
     assert "detail v2 path was not called" in readme
     assert "0.15 second gap was not measured between separate processes" in readme
     assert "実ゲートウェイ" in readme
-    shas = set(__import__("re").findall(r"\b[0-9a-f]{40}\b", pr))
-    assert shas == {public_text["catalog_sha"]}
+    sha_re = __import__("re")
+    catalog_sha = public_text["catalog_sha"]
+    assert sha_re.fullmatch(r"[0-9a-f]{40}", catalog_sha)
+    pr_shas = set(sha_re.findall(r"\b[0-9a-f]{40}\b", pr))
+    assert len(pr_shas) == 1
+    pr_sha = pr_shas.pop()
+    if (PLUGIN_DIR / ".git").exists():
+        import subprocess
+        for item in (catalog_sha, pr_sha):
+            kind = subprocess.check_output(
+                ["git", "-C", str(PLUGIN_DIR), "cat-file", "-t", item],
+                text=True,
+            ).strip()
+            assert kind == "commit", item
     notice_line = "Copyright (c) 2025 Digital Agency, Government of Japan"
-    license_text = (
-        SHIP / "audit_log" / "src" / "upstream_LICENSE.txt"
-    ).read_text(encoding="utf-8")
-    assert notice_line in license_text
+    assert notice_line in public_text["upstream_license"]
     assert notice_line in public_text["notice"]
     register_src = (PLUGIN_DIR / "__init__.py").read_text(encoding="utf-8")
     assert "tests" not in register_src

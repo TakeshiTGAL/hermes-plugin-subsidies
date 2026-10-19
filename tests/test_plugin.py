@@ -258,10 +258,13 @@ def test_watch_failure_does_not_clear_baseline(plugin, fake_api):
     assert state_after["last_error"]["kind"] == "network_error"
 
 
-def test_search_limit_clamped_by_config(plugin, fake_api, monkeypatch):
+def test_search_limit_above_cap_is_refused(plugin, fake_api, monkeypatch):
     plugin.settings.bind_config(lambda key: 2 if key == "search_limit" else None)
     out = _load(plugin.tools.subsidies_search, {"keyword": "人材", "limit": 99})
-    assert out["count_returned"] == 2
+    text = json.dumps(out, ensure_ascii=False)
+    assert out["ok"] is False and out["error_type"] == "bad_request"
+    assert "99" not in text
+    assert fake_api.calls == []
     plugin.settings.bind_config(None)
 
 
@@ -557,7 +560,7 @@ def test_notice_has_digital_agency_2025_copyright():
 
 
 def test_readme_does_not_claim_missing_catalog_peers():
-    # Catalog peers are documented in ship/pr_body (outside this repo). README must
+    # Catalog peers are documented outside this repo. README must
     # not invent catalog facts; keep a light check that we do not say "jp-edinet".
     readme = (PLUGIN_DIR / "README.md").read_text(encoding="utf-8")
     assert "jp-edinet" not in readme

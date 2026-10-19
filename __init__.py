@@ -65,3 +65,16 @@ def register(ctx):
         description="Read-only watch check",
         args_hint="[check] [profile]",
     )
+    try:
+        from pathlib import Path
+        ctx.register_skill(
+            "japan-subsidies",
+            Path(__file__).resolve().parent / "skills" / "japan-subsidies" / "SKILL.md",
+            description=(
+                "Japan subsidies and jGrants grants. "
+                "Before web_search, use tool_search to find the subsidy tools and tool_call to run them."
+            ),
+        )
+    except Exception:
+        import logging
+        logging.getLogger(__name__).warning("jp-subsidies skill was not registered", exc_info=True)

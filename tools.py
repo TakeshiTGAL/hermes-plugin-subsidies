@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import json
 import logging
+import re
+import unicodedata
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Optional
 
-from . import citation, client, save, schedule, settings, watch
+from . import citation, client, enums, save, schedule, settings, watch
 from .errors import SubsidiesError
 
 logger = logging.getLogger(__name__)
@@ -57,12 +59,10 @@ def _parse_bound(value: Any, *, end_of_day: bool = False) -> Optional[datetime]:
     dt = watch.parse_dt(text)
     if dt is None:
         raise SubsidiesError(
-            f"Could not parse date/datetime {value!r}.",
+            "Could not parse that date. Use YYYY-MM-DD, for example 2026-10-01, "
+            "or a datetime such as 2026-10-01T00:00:00Z. Slashes are accepted on a date.",
             kind="bad_request",
-            next_step=(
-                "Use ISO dates such as 2026-10-01 (deadline_to keeps the whole UTC day) "
-                "or datetimes such as 2026-10-01T00:00:00Z."
-            ),
+            next_step="Pass deadline_from or deadline_to as 2026-10-01.",
         )
     return dt
 
@@ -91,13 +91,104 @@ def _format_list_item(raw: dict[str, Any]) -> dict[str, Any]:
     return item
 
 
+_SEARCH_KEYS = {
+    "keyword", "target_area_search", "industry", "target_number_of_employees",
+    "use_purpose", "acceptance", "deadline_from", "deadline_to", "sort", "order", "limit",
+}
+_EXTRA = (
+    "Only keyword, target_area_search, industry, target_number_of_employees, use_purpose, "
+    "acceptance, deadline_from, deadline_to, sort, order, and limit are accepted. "
+    "Remove any other argument. Example: keyword 人材 and limit 10."
+)
+_AREA = (
+    "target_area_search must be a jGrants area, such as 東京都 or 全国. "
+    "Add 都, 府, or 県 when the name needs it, for example 東京都."
+)
+_DATE = (
+    "deadline_from and deadline_to must be a calendar date, for example 2026-10-01. "
+    "Slashes are accepted. A month or day outside the calendar is refused."
+)
+_LIMIT = (
+    "limit must be a whole number from 1 up to the configured cap, for example 1. "
+    "A value outside that range is refused and is not reduced to the cap."
+)
+_SORTS = {"created_date", "acceptance_start_datetime", "acceptance_end_datetime"}
+
+
+def _whole_number(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    if isinstance(value, str):
+        folded = unicodedata.normalize("NFKC", value).strip()
+        if re.fullmatch(r"[0-9]+", folded):
+            return int(folded)
+        if re.fullmatch(r"[0-9]+\.0+", folded):
+            return int(folded.split(".", 1)[0])
+    return None
+
+
+def _area_name(value: str) -> str:
+    text = unicodedata.normalize("NFKC", value).strip()
+    if text in enums.AREA_VALUES:
+        return text
+    for full in enums.AREA_VALUES:
+        if full.endswith(("都", "府", "県")) and text == full[:-1]:
+            return full
+    raise SubsidiesError(_AREA, kind="bad_request")
+
+
+def _calendar_day(value: Any) -> Any:
+    if value in (None, ""):
+        return value
+    text = unicodedata.normalize("NFKC", str(value)).strip().replace("/", "-").replace(".", "-")
+    match = re.fullmatch(r"(\d{4})-(\d{1,2})-(\d{1,2})", text)
+    if match is None:
+        return value
+    year, month, day = (int(match.group(index)) for index in range(1, 4))
+    if not (1 <= month <= 12 and 1 <= day <= 31):
+        raise SubsidiesError(_DATE, kind="bad_request")
+    return f"{year:04d}-{month:02d}-{day:02d}"
+
+
+def _search_limit(value: Any) -> int:
+    cap = settings.search_limit(None)
+    if value is None:
+        return cap
+    number = _whole_number(value)
+    if number is None or number < 1 or number > cap:
+        raise SubsidiesError(_LIMIT, kind="bad_request")
+    return number
+
+
+def _prepare_search(args: dict) -> dict:
+    if any(key not in _SEARCH_KEYS for key in args):
+        raise SubsidiesError(_EXTRA, kind="bad_request")
+    clean = dict(args)
+    area = clean.get("target_area_search")
+    if area not in (None, ""):
+        clean["target_area_search"] = _area_name(str(area))
+    sort = clean.get("sort")
+    if isinstance(sort, str) and sort.strip().lower() in _SORTS:
+        clean["sort"] = sort.strip().lower()
+    if "deadline_from" in clean:
+        clean["deadline_from"] = _calendar_day(clean.get("deadline_from"))
+    if "deadline_to" in clean:
+        clean["deadline_to"] = _calendar_day(clean.get("deadline_to"))
+    return clean
+
+
 @_guard
 def subsidies_search(args: dict) -> dict:
     # Validate enums and deadline bounds before any live HTTP call.
-    criteria = watch.normalize_criteria(args)
-    d_from = _parse_bound(args.get("deadline_from"), end_of_day=False)
-    d_to = _parse_bound(args.get("deadline_to"), end_of_day=True)
-    limit = settings.search_limit(args.get("limit"))
+    prepared = _prepare_search(args)
+    criteria = watch.normalize_criteria(prepared)
+    d_from = _parse_bound(prepared.get("deadline_from"), end_of_day=False)
+    d_to = _parse_bound(prepared.get("deadline_to"), end_of_day=True)
+    limit = _search_limit(prepared.get("limit") if "limit" in prepared else None)
 
     result, meta_count = watch.fetch_list(criteria)
 

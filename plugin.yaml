@@ -1,5 +1,5 @@
 name: jp-subsidies
-version: 0.1.0
+version: 0.1.1
 manifest_version: 2
 # hermes plugins install accepts manifest_version 2 from v0.21.4.
 requires_hermes: ">=0.21.4"

@@ -3,24 +3,21 @@
 SEARCH = {
     "name": "subsidies_search",
     "description": (
-        "Search Japanese subsidies on jGrants (Jグランツ) via the public list API. "
+        "Japan subsidies (jGrants): search open programs. "
         "Filter by keyword (required, 2–255 chars), optional region (target_area_search), "
         "industry, employee-size enum, use_purpose, and whether acceptance is open. "
         "industry / target_area_search / target_number_of_employees / use_purpose must be "
         "exact jGrants enum strings (e.g. industry '医療、福祉' with a Japanese comma — "
         "'医療・福祉' is rejected). A value that is not an enum is rejected before HTTP, "
         "so it is not shown as no matches. "
-        "Optional deadline_from / deadline_to (ISO date or datetime) filter "
-        "acceptance_end_datetime on the client — the list API has no deadline-range "
-        "query parameter. A date-only deadline_to keeps the whole UTC calendar day "
-        "(end 23:59:59.999999Z). Returns name/title, subsidy_max_limit, acceptance window, "
-        "target area/employees, and institution_name when present. "
+        "deadline_from and deadline_to filter acceptance_end_datetime on the client. "
         "When subsidy_max_limit is 0, treat it as unset/unknown from the list API (not a proven "
         "¥0 ceiling) and open subsidies_detail. "
         "subsidy_rate and front_subsidy_detail_page_url are NOT in the list API; those "
         "fields are returned as null (not guessed). Use subsidies_detail for rate, URL, "
         "HTML detail, and attachment names. Always show 出典：J グランツ and the "
-        "processed_note (jGrants Web-API terms 第5条1項二) from source."
+        "processed_note (jGrants Web-API terms 第5条1項二) from source. "
+        "Each result is a government grant; eligibility is in subsidies_detail."
     ),
     "parameters": {
         "type": "object",
@@ -95,9 +92,9 @@ SEARCH = {
             "limit": {
                 "type": "integer",
                 "description": (
-                    "Max rows after filters. Integers below 1 are rejected (0 is not changed to 1). "
-                    "Values above the config cap are reduced to the cap and cannot raise it "
-                    "(default 30, hard max 100)."
+                    "Max rows after filters. A whole number from 1 up to the configured cap "
+                    "(default 30, hard max 100), for example 10. 10.0 and full-width digits are "
+                    "accepted. 0 and values above the cap are refused and are not reduced to the cap."
                 ),
             },
         },
@@ -108,18 +105,16 @@ SEARCH = {
 DETAIL = {
     "name": "subsidies_detail",
     "description": (
-        "Fetch one subsidy by id from the jGrants public detail API: purpose (use_purpose), "
-        "industry, subsidy_rate, max limit, acceptance window, HTML detail text (may contain "
-        "eligibility and expense notes — jGrants does not expose those as separate fields), "
-        "front_subsidy_detail_page_url, and attachment file names "
-        "(application_guidelines / outline_of_grant / application_form). "
+        "Japan subsidy (jGrants): one program's terms. "
+        "Also returns purpose, industry, HTML detail, the public page URL, and attachment names. "
         "Base64 file bodies are never returned in the tool JSON. "
         "When save_attachments=true, files are written under "
         "<HERMES_HOME>/plugin-data/jp-subsidies/files/<id>/ "
         "for this profile (via plugin_data_dir) only after Hermes' write guard allows it, "
         "and paths are returned. "
         "Missing API fields are null — never invented. Cite 出典：J グランツ and include "
-        "source.processed_note (terms 第5条1項二)."
+        "source.processed_note (terms 第5条1項二). "
+        "Terms can include the application deadline, funding for a small business or a startup, and the prefecture."
     ),
     "parameters": {
         "type": "object",
@@ -143,27 +138,18 @@ DETAIL = {
 WATCH_SETUP = {
     "name": "subsidies_watch_setup",
     "description": (
-        "Save a watch profile (keyword + optional area/industry/employees) under "
-        "<HERMES_HOME>/plugin-data/jp-subsidies/ for this profile (via plugin_data_dir), take a baseline snapshot of matching subsidy IDs, "
-        "write a weekly cron script under the same Hermes home's scripts/ "
-        "(plugin_data_dir → parent.parent/scripts), and return the "
-        "`hermes cron create … --no-agent` line. "
+        "Japan subsidies (jGrants): save a weekly watch. "
+        "It saves the keyword for this profile, fetches a jGrants baseline, writes a weekly cron script "
+        "under the Hermes home's scripts/, and returns a hermes cron create line. "
         "The first run reports only that the baseline was saved (it does not flood new "
-        "items). Re-running setup with the same criteria keeps previous seen_ids unchanged "
-        "(does not absorb the current list into seen, and does not claim first run); "
-        "unnotified new ids stay reportable on the next successful check. "
+        "items). Re-running setup with the same criteria keeps previous seen_ids, "
+        "so unnotified new ids stay reportable on the next successful check. "
         "Re-running with different criteria retakes a new baseline (discards old seen_ids) "
         "so prior matches are not flooded as new. "
-        "Weekly cron scripts are written under the same Hermes home as plugin-data "
-        "(via plugin_data_dir → parent.parent/scripts). "
         "Later cron runs list IDs that appeared since the last success and items "
         "whose acceptance_end_datetime is within watch_deadline_days (default 14). "
         "API failures are reported as failures and do not reset the baseline to empty. "
-        "Default deliver is 'origin' (captured origin chat when present; bare CLI create "
-        "may fall back to home or skip chat — prefer explicit platform:chat_id). "
-        "'local' only writes under the Hermes home's cron/output/. "
-        "The returned hermes cron create line always creates a new job; running it again "
-        "does not replace an existing one. Profile names are stored unchanged (Japanese names rejected). "
+        "The returned hermes cron create line always creates a new job. "
         "A second name that differs only by letter case, such as Tokyo and tokyo, is refused before either the watch JSON or the cron script is written."
     ),
 
