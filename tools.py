@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Optional
 
-from . import citation, client, enums, save, schedule, settings, watch
+from . import citation, client, enums, overlap, save, schedule, settings, watch
 from .errors import SubsidiesError
 
 logger = logging.getLogger(__name__)
@@ -290,6 +290,12 @@ def subsidies_detail(args: dict) -> dict:
         ),
         "attachments_saved": saved,
         "source": citation.source_block(),
+        "text_match": overlap.text_match(raw, {
+            "industry": args.get("company_industry"),
+            "capital_jpy": args.get("company_capital_jpy"),
+            "employees": args.get("company_employees"),
+            "location": args.get("company_location"),
+        }),
     }
     if out["subsidy_max_limit"] == 0:
         out["subsidy_max_limit_note"] = (

@@ -114,7 +114,10 @@ DETAIL = {
         "and paths are returned. "
         "Missing API fields are null — never invented. Cite 出典：J グランツ and include "
         "source.processed_note (terms 第5条1項二). "
-        "Terms can include the application deadline, funding for a small business or a startup, and the prefecture."
+        "Terms can include the application deadline, funding for a small business or a startup, and the prefecture. "
+        "Optional company_industry, company_capital_jpy, company_employees, and company_location are checked "
+        "as literal text against the call. text_match.eligibility is not_claimed. A cap is returned only when "
+        "the call states one. subsidy_max_limit 0 is not a cap. No award is estimated."
     ),
     "parameters": {
         "type": "object",
@@ -129,6 +132,22 @@ DETAIL = {
                     "If true, decode and save attachment bytes via the Hermes write guard. "
                     "Names that match after ignoring letter case, or after Unicode NFC and NFD normalization, are one file; a collision saves nothing."
                 ),
+            },
+            "company_industry": {
+                "type": "string",
+                "description": "Industry text already returned for this corporation. Compared as characters, not as eligibility.",
+            },
+            "company_capital_jpy": {
+                "type": "integer",
+                "description": "Capital already returned, in yen. Compared as digits. Not an eligibility test.",
+            },
+            "company_employees": {
+                "type": "integer",
+                "description": "Employee count already returned. Compared as digits. Not an eligibility test.",
+            },
+            "company_location": {
+                "type": "string",
+                "description": "Registered address already returned. Compared as characters, not as eligibility.",
             },
         },
         "required": ["subsidy_id"],

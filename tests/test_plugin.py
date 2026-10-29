@@ -156,6 +156,48 @@ def test_detail_strips_base64_and_lists_names(plugin, fake_api):
     assert "data" not in json.dumps(out.get("attachment_names"))
 
 
+def test_detail_literal_overlap_is_not_eligibility(plugin, fake_api):
+    out = _load(plugin.tools.subsidies_detail, {
+        "subsidy_id": "a0WfQ000003MWE2UAO",
+        "company_industry": "医療",
+        "company_capital_jpy": 635402000000,
+        "company_employees": 70000,
+        "company_location": "愛知県豊田市",
+    })
+    match = out["text_match"]
+    assert match["eligibility"] == "not_claimed"
+    assert "estimate an award" in match["note"]
+    by_attr = {row["attribute"]: row for row in match["overlaps"]}
+    assert by_attr["industry"]["matched"] is True
+    assert "医療" in by_attr["industry"]["hits"]
+    assert by_attr["capital_jpy"]["matched"] is False
+    assert by_attr["capital_jpy"]["note"] == "要項の文言には無い。"
+    assert by_attr["location"]["matched"] is False
+    assert match["subsidy_cap"]["stated"] is False
+    blob = json.dumps(out, ensure_ascii=False)
+    assert "対象です" not in blob
+    assert "受給予想" not in blob
+    assert "見込み額" not in blob
+
+
+def test_overlap_reads_a_stated_cap_and_a_named_article(plugin):
+    raw = {
+        "title": "例",
+        "detail": "<p>対象は製造業。上限100万円。中小企業等経営強化法第17条による。</p>",
+        "industry": "製造業",
+        "subsidy_max_limit": 0,
+    }
+    match = plugin.overlap.text_match(raw, {"industry": "農業", "location": "東京都"})
+    assert match["overlaps"][0]["matched"] is False
+    assert match["subsidy_cap"]["stated"] is True
+    assert match["subsidy_cap"]["entries"][0]["unit"] == "万円"
+    assert match["subsidy_cap"]["entries"][0]["amount_text"] == "100"
+    titles = match["cited_statutes"]
+    assert titles[0]["law_title"] == "中小企業等経営強化法"
+    assert titles[0]["article"] == "17"
+    assert "eligibility" not in json.dumps(match["subsidy_cap"])
+
+
 def test_detail_missing_id(plugin, fake_api):
     fake_api.fail_detail_with = json.loads(
         (PLUGIN_DIR / "tests/fixtures/detail_empty.json").read_text(encoding="utf-8")
